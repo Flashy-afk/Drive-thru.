@@ -1,109 +1,4 @@
-# app.py
-import streamlit as st
-import streamlit.components.v1 as components
-import time
-from collections import deque
-import random
-import threading
-from producto import Producto
-from cliente import Cliente
-
-# --- RECONFIGURACIÓN DEL CAJERO PARA EL MAPA VISUAL ---
-class CajeroVisual(threading.Thread):
-    def __init__(self, nombre_cajero, cola_clientes, menu_restaurante, pila_tickets):
-        super().__init__()
-        self.nombre_cajero = nombre_cajero
-        self.cola_clientes = cola_clientes
-        self.menu = menu_restaurante
-        self.pila_tickets = pila_tickets
-        self.estado = "☕ Esperando..."
-        self.cliente_actual = None
-        self.progreso = 0
-
-    def run(self):
-        while True:
-            try:
-                cliente = self.cola_clientes.popleft()
-            except IndexError:
-                self.estado = "🔴 Finalizado"
-                break
-
-            self.atender_cliente(cliente)
-
-    def atender_cliente(self, cliente):
-        self.cliente_actual = cliente
-        self.estado = f"🍔 Ordenando..."
-        self.progreso = 10
-        
-        cantidad_productos = random.randint(1, 3)
-        for _ in range(cantidad_productos):
-            producto_elegido = random.choice(self.menu)
-            cliente.agregar_producto(producto_elegido)
-            
-        tiempo_preparacion = random.randint(2, 5)
-        self.estado = f"🍳 Cocinando..."
-        
-        for i in range(10):
-            time.sleep(tiempo_preparacion / 10)
-            self.progreso = 10 + (i * 9)
-
-        if (cliente.total > 0):
-            self.estado = f"✅ Listo ${cliente.total:.0f}"
-            self.pila_tickets.append(cliente)
-            time.sleep(1.5) # Tiempo para apreciar el coche en ventanilla
-            
-        self.cliente_actual = None
-        self.estado = "☕ Esperando..."
-        self.progreso = 0
-
-# --- CONFIGURACIÓN DE LA INTERFAZ ---
-st.set_page_config(page_title="Carl's Jr. Isometric Drive-Thru", page_icon="🍔", layout="wide")
-
-st.title("🍔 Carl's Jr. — Simulación Drive-Thru en Perspectiva 3D")
-st.write("Visualización isométrica en tiempo real del flujo vehicular utilizando hilos paralelos.")
-st.write("---")
-
-if 'menu' not in st.session_state:
-    st.session_state.menu = [
-        Producto("Hamburguesa Clásica", 90.00),
-        Producto("Papas Fritas Grandes", 45.50),
-        Producto("Refresco de Cola", 30.00),
-        Producto("Malteada de Vainilla", 55.00)
-    ]
-
-if 'simulacion_activa' not in st.session_state:
-    st.session_state.simulacion_activa = False
-    st.session_state.cola_autos = deque()
-    st.session_state.pila_tickets = []
-
-col_btn, col_info = st.columns([1, 2])
-with col_btn:
-    if not st.session_state.simulacion_activa:
-        if st.button("🚀 Iniciar Simulación 3D", type="primary", use_container_width=True):
-            nombres = ["Parra", "Casas", "Pablo", "Fernanda", "Jonathan", "Cisthian", "Luz", "Kevin"]
-            st.session_state.cola_autos = deque([Cliente(n) for n in nombres])
-            st.session_state.pila_tickets = []
-            st.session_state.simulacion_activa = True
-            st.rerun()
-
-if st.session_state.simulacion_activa:
-    if 'v1' not in st.session_state or not st.session_state.v1.is_alive():
-        st.session_state.v1 = CajeroVisual("VENTANILLA 1", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
-        st.session_state.v2 = CajeroVisual("VENTANILLA 2", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
-        st.session_state.v1.start()
-        st.session_state.v2.start()
-
-    col_mapa, col_reporte = st.columns([5, 3])
-
-    with col_mapa:
-        contenedor_mapa_vivo = st.empty()
-
-    with col_reporte:
-        st.subheader("🧾 Historial de Caja (Pila - LIFO)")
-        box_pila = st.empty()
-        box_caja = st.empty()
-
-    # --- RENDERIZADO DEL MAPA ISOMÉTRICO (PROCESAMIENTO SEGURO) ---
+# --- RENDERIZADO DEL MAPA ISOMÉTRICO (PROCESAMIENTO SEGURO) ---
     while st.session_state.v1.is_alive() or st.session_state.v2.is_alive():
         
         # Estructura del mapa base en perspectiva isométrica
@@ -195,8 +90,10 @@ if st.session_state.simulacion_activa:
 
         svg_mapa += "</svg>"
         
-        # Inyección web pura para evitar la rotura de Markdown
-        components.html(svg_mapa, height=480)
+        # --- EL FIX AQUÍ ---
+        # Renderizado estricto dentro del contenedor para reemplazar la imagen previa y no generar scroll
+        with contenedor_mapa_vivo:
+            components.html(svg_mapa, height=480)
 
         # SECCIÓN LATERAL: REPORTE FINANCIERO
         tickets_list = list(st.session_state.pila_tickets)
@@ -211,7 +108,3 @@ if st.session_state.simulacion_activa:
         box_caja.metric(label="💰 Capital Acumulado en Caja", value=f"${caja_total:.2f}")
 
         time.sleep(0.2)
-
-    st.session_state.simulacion_activa = False
-    st.balloons()
-    st.success("🎉 ¡El turno ha concluido con total éxito! Todos los vehículos han cruzado el Drive-Thru.")
