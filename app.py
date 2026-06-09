@@ -200,4 +200,18 @@ if st.session_state.simulacion_activa:
 
         # SECCIÓN LATERAL: REPORTE FINANCIERO
         tickets_list = list(st.session_state.pila_tickets)
-        with box_pila.container
+        with box_pila.container(border=True):
+            if tickets_list:
+                for tk in reversed(tickets_list):
+                    st.write(f"📌 **Ticket de {tk.nombre}** — Finalizado con ${tk.total:.2f}")
+            else:
+                st.caption("Esperando transacciones de ventanillas...")
+
+        caja_total = sum(tk.total for tk in tickets_list)
+        box_caja.metric(label="💰 Capital Acumulado en Caja", value=f"${caja_total:.2f}")
+
+        time.sleep(0.2)
+
+    st.session_state.simulacion_activa = False
+    st.balloons()
+    st.success("🎉 ¡El turno ha concluido con total éxito! Todos los vehículos han cruzado el Drive-Thru.")
