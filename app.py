@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 import time
 from collections import deque
@@ -34,13 +33,11 @@ class CajeroVisual(threading.Thread):
         self.estado = f"🍔 Ordenando..."
         self.progreso = 10
         
-        # Lógica exacta de tu backend para agregar productos aleatorios
         cantidad_productos = random.randint(1, 3)
         for _ in range(cantidad_productos):
             producto_elegido = random.choice(self.menu)
             cliente.agregar_producto(producto_elegido)
             
-        # Simulación del tiempo de preparación cocinando
         tiempo_preparacion = random.randint(2, 5)
         self.estado = f"🍳 Cocinando..."
         
@@ -51,7 +48,7 @@ class CajeroVisual(threading.Thread):
         if (cliente.total > 0):
             self.estado = f"✅ ¡Listo! ${cliente.total:.1f}"
             self.pila_tickets.append(cliente)
-            time.sleep(1.2) # Pausa para ver el auto en la ventanilla cobrando
+            time.sleep(1.2)
             
         self.cliente_actual = None
         self.estado = "☕ Esperando auto..."
@@ -60,11 +57,11 @@ class CajeroVisual(threading.Thread):
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 st.set_page_config(page_title="Carl's Jr. Top-Down Drive-Thru", page_icon="🍔", layout="wide")
 
-# Estilos CSS avanzados para pintar el mapa vial desde arriba
+# Estilos CSS
 st.markdown("""
     <style>
     .mapa-container {
-        background-color: #2e7d32; /* Color pasto/césped de fondo */
+        background-color: #2e7d32;
         padding: 20px;
         border-radius: 15px;
         text-align: center;
@@ -77,7 +74,7 @@ st.markdown("""
     }
     .caja-ventanilla {
         background-color: #ffffff;
-        border: 4px solid #ffcc00; /* Amarillo Carl's Jr */
+        border: 4px solid #ffcc00;
         border-radius: 12px;
         width: 45%;
         padding: 10px;
@@ -90,7 +87,7 @@ st.markdown("""
         margin-bottom: 5px;
     }
     .asfalto-servicio {
-        background-color: #3a3a3a; /* Color pavimento oscuro */
+        background-color: #3a3a3a;
         min-height: 70px;
         border-radius: 8px;
         display: flex;
@@ -100,14 +97,13 @@ st.markdown("""
         margin-top: 5px;
     }
     .auto-activo {
-        background-color: #e53935; /* Auto rojo en atención */
+        background-color: #e53935;
         color: white;
         padding: 8px 18px;
         border-radius: 6px;
         font-weight: bold;
         font-size: 14px;
         box-shadow: 0px 4px 8px rgba(0,0,0,0.3);
-        animation: vibrar 0.5s infinite alternate;
     }
     .spot-vacio {
         color: #aaa;
@@ -118,11 +114,11 @@ st.markdown("""
         font-size: 24px;
         color: #fff;
         margin: 5px 0;
-        line-height: 12px;
+        line-height: 14px;
         font-weight: bold;
     }
     .carril-acceso {
-        background-color: #2c2c2c; /* Asfalto carril común */
+        background-color: #2c2c2c;
         border-radius: 12px;
         padding: 15px;
         border-left: 4px dashed #ffcc00;
@@ -146,32 +142,14 @@ st.markdown("""
         gap: 12px;
     }
     .auto-fila {
-        background-color: #1e88e5; /* Autos azules esperando en fila */
+        background-color: #1e88e5;
         color: white;
         padding: 8px 0;
         border-radius: 6px;
         font-weight: bold;
         font-size: 13px;
         width: 85%;
-        position: relative;
         box-shadow: 0px 4px 5px rgba(0,0,0,0.4);
-        transition: all 0.5s ease;
-    }
-    /* Decoraciones de llantas para vista desde arriba */
-    .auto-fila::before, .auto-fila::after, .auto-activo::before, .auto-activo::after {
-        content: '';
-        position: absolute;
-        width: 6px;
-        height: 12px;
-        background: #000;
-        border-radius: 2px;
-    }
-    .auto-fila::before { top: 4px; left: -5px; }
-    .auto-fila::after { top: 4px; right: -5px; }
-    
-    @keyframes vibrar {
-        from { transform: translateY(0); }
-        to { transform: translateY(-2px); }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -179,7 +157,6 @@ st.markdown("""
 st.title("🍔 Carl's Jr. — Croquis del Drive-Thru desde Arriba")
 st.write("---")
 
-# 1. Menu de Productos
 if 'menu' not in st.session_state:
     st.session_state.menu = [
         Producto("Hamburguesa Clásica", 90.00),
@@ -188,13 +165,11 @@ if 'menu' not in st.session_state:
         Producto("Malteada de Vainilla", 55.00)
     ]
 
-# 2. Inicialización de estados
 if 'simulacion_activa' not in st.session_state:
     st.session_state.simulacion_activa = False
     st.session_state.cola_autos = deque()
     st.session_state.pila_tickets = []
 
-# --- PANEL DE CONTROL ---
 col_btn, col_info = st.columns([1, 2])
 with col_btn:
     if not st.session_state.simulacion_activa:
@@ -205,17 +180,13 @@ with col_btn:
             st.session_state.simulacion_activa = True
             st.rerun()
 
-# --- ESPACIO DE LA SIMULACIÓN ---
 if st.session_state.simulacion_activa:
-    
-    # Encendido de hilos de fondo
     if 'v1' not in st.session_state or not st.session_state.v1.is_alive():
         st.session_state.v1 = CajeroVisual("VENTANILLA 1", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
         st.session_state.v2 = CajeroVisual("VENTANILLA 2", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
         st.session_state.v1.start()
         st.session_state.v2.start()
 
-    # Dividimos la pantalla: Izquierda el Mapa, Derecha el Reporte Financiero
     col_mapa, col_reporte = st.columns([5, 3])
 
     with col_mapa:
@@ -227,57 +198,21 @@ if st.session_state.simulacion_activa:
         box_pila = st.empty()
         box_caja = st.empty()
 
-    # LOOP DE RENDERIZADO EN TIEMPO REAL
     while st.session_state.v1.is_alive() or st.session_state.v2.is_alive():
-        
-        # 1. Construir dinámicamente las Ventanillas Superiores en HTML
         v1_html = f"<div class='auto-activo'>🚗 {st.session_state.v1.cliente_actual.nombre}</div>" if st.session_state.v1.cliente_actual else "<span class='spot-vacio'>Vacio 🪹</span>"
         v2_html = f"<div class='auto-activo'>🚗 {st.session_state.v2.cliente_actual.nombre}</div>" if st.session_state.v2.cliente_actual else "<span class='spot-vacio'>Vacio 🪹</span>"
 
-        # 2. Construir los autos que quedan abajo formados en el carril
         autos_carrril_html = ""
         for auto in st.session_state.cola_autos:
             autos_carrril_html += f"<div class='auto-fila'>🚗 {auto.nombre}</div>"
-        
         if not autos_carrril_html:
             autos_carrril_html = "<div style='color: #aaa; font-style: italic; font-size:13px;'>Carril despejado</div>"
 
-        # 3. Integrar todo en la plantilla del mapa
-        mapa_completo_html = f"""
-        <div class='mapa-container'>
-            <div class='zona-ventanillas'>
-                <div class='caja-ventanilla'>
-                    <div class='titulo-ventanilla'>🪟 Ventanilla 1</div>
-                    <div style='font-size:12px; color:#666;'>{st.session_state.v1.estado}</div>
-                    <div class='asfalto-servicio'>{v1_html}</div>
-                </div>
-                <div class='caja-ventanilla'>
-                    <div class='titulo-ventanilla'>🪟 Ventanilla 2</div>
-                    <div style='font-size:12px; color:#666;'>{st.session_state.v2.estado}</div>
-                    <div class='asfalto-servicio'>{v2_html}</div>
-                </div>
-            </div>
-            
-            <div class='lineas-division'>
-                ↖  ↗<br>
-                │  │<br>
-                └──┴──<br>
-                ▲
-            </div>
-            
-            <div class='carril-acceso'>
-                <div class='titulo-carril'>🛣️ Fila Única de Acceso</div>
-                <div class='flujo-autos'>
-                    {autos_carrril_html}
-                </div>
-            </div>
-        </div>
-        """
+        # Plantilla compacta sin saltos de línea vacíos
+        mapa_completo_html = f"""<div class='mapa-container'><div class='zona-ventanillas'><div class='caja-ventanilla'><div class='titulo-ventanilla'>🪟 Ventanilla 1</div><div style='font-size:12px; color:#666;'>{st.session_state.v1.estado}</div><div class='asfalto-servicio'>{v1_html}</div></div><div class='caja-ventanilla'><div class='titulo-ventanilla'>🪟 Ventanilla 2</div><div style='font-size:12px; color:#666;'>{st.session_state.v2.estado}</div><div class='asfalto-servicio'>{v2_html}</div></div></div><div class='lineas-division'>↖  ↗<br>│  │<br>└──┴──<br>▲</div><div class='carril-acceso'><div class='titulo-carril'>🛣️ Fila Única de Acceso</div><div class='flujo-autos'>{autos_carrril_html}</div></div></div>"""
         
-        # Pintamos el mapa actualizado en el contenedor vacío
         contenedor_mapa_vivo.markdown(mapa_completo_html, unsafe_allow_html=True)
 
-        # 4. Actualizar la Pila de tickets (LIFO: El último cobrado se muestra arriba)
         tickets_list = list(st.session_state.pila_tickets)
         with box_pila.container(border=True):
             if tickets_list:
@@ -286,13 +221,11 @@ if st.session_state.simulacion_activa:
             else:
                 st.caption("Esperando cierres de orden...")
 
-        # 5. Indicador del total de dinero en caja
         caja_total = sum(tk.total for tk in tickets_list)
         box_caja.metric(label="💰 Dinero Total Acumulado en Caja", value=f"${caja_total:.2f}")
 
-        time.sleep(0.2) # Velocidad del refresco visual
+        time.sleep(0.2)
 
-    # Acciones de finalización
     st.session_state.simulacion_activa = False
     st.balloons()
     st.success("🎉 ¡El turno ha terminado con éxito! Todos los vehículos cruzaron el Drive-Thru.")
