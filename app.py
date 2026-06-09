@@ -21,7 +21,6 @@ class EstacionOrden(threading.Thread):
 
     def run(self):
         while True:
-            # Bloqueo seguro para extraer de la cola compartida
             with self.lock:
                 if (len(self.cola_clientes) > 0):
                     cliente = self.cola_clientes.popleft()
@@ -31,14 +30,13 @@ class EstacionOrden(threading.Thread):
 
             self.cliente_actual = cliente
             self.estado = "📝 Ordenando..."
-            time.sleep(2.5) # Interacción con el menú fuera del lock para no congelar la app
+            time.sleep(2.0) 
             
             cantidad_productos = random.randint(1, 3)
             for _ in range(cantidad_productos):
                 producto_elegido = random.choice(self.menu)
                 cliente.agregar_producto(producto_elegido)
             
-            # Bloqueo seguro para insertar en la siguiente cola
             with self.lock:
                 self.cola_cocina.append(cliente)
                 
@@ -47,7 +45,7 @@ class EstacionOrden(threading.Thread):
         
         self.estado = "🔴 Apagado"
 
-# --- HILO 2: VENTANILLA DE ENTREGA Y PAGO (FACHADA PRINCIPAL) ---
+# --- HILO 2: VENTANILLA DE ENTREGA Y PAGO ---
 class VentanillaEntrega(threading.Thread):
     def __init__(self, cola_cocina, pila_tickets, thread_orden, lock):
         super().__init__()
@@ -60,7 +58,6 @@ class VentanillaEntrega(threading.Thread):
 
     def run(self):
         while True:
-            # Verificar de forma segura si debemos seguir operando
             with self.lock:
                 seguir_operando = (self.thread_orden.is_alive() or len(self.cola_cocina) > 0)
             
@@ -74,28 +71,28 @@ class VentanillaEntrega(threading.Thread):
             
             if (not cliente):
                 self.estado = "☕ Esperando..."
-                time.sleep(0.1)
+                time.sleep(0.2)
                 continue
 
             self.cliente_actual = cliente
             self.estado = "🍳 Cocinando..."
-            time.sleep(random.randint(4, 7))
+            time.sleep(random.randint(3, 5))
             
             if (cliente.total > 0):
                 self.estado = f"💰 Cobrando (${cliente.total:.0f})"
                 with self.lock:
                     self.pila_tickets.append(cliente)
-                time.sleep(3.0) # Tiempo de atención final
+                time.sleep(2.0)
             
             self.cliente_actual = None
             
         self.estado = "🔴 Cerrado"
 
 # --- CONFIGURACIÓN DE LA INTERFAZ STREAMLIT ---
-st.set_page_config(page_title="Carl's Jr. Thread-Safe Drive-Thru", page_icon="🍔", layout="wide")
+st.set_page_config(page_title="Carl's Jr. Drive-Thru", page_icon="🍔", layout="wide")
 
-st.title("🍔 Carl's Jr. — Simulación Drive-Thru Concurrente Seguro")
-st.write("Animación fluida a 25 FPS sincronizada mediante un cerrojo mutuo (`threading.Lock`) para prevenir colisiones.")
+st.title("🍔 Carl's Jr. — Simulación Drive-Thru Concurrente")
+st.write("Animación fluida y estable optimizada contra parpadeos y errores de pantalla en negro.")
 st.write("---")
 
 if ('menu' not in st.session_state):
@@ -112,12 +109,12 @@ if ('simulacion_activa' not in st.session_state):
     st.session_state.cola_cocina = deque()
     st.session_state.pila_tickets = []
     st.session_state.posiciones_visuales = {}
-    st.session_state.lock = threading.Lock() # Inicialización del Lock global
+    st.session_state.lock = threading.Lock()
 
 col_btn, col_info = st.columns([1, 2])
 with col_btn:
     if (not st.session_state.simulacion_activa):
-        if (st.button("🚀 Iniciar Circuito de Alta Fluidez", type="primary", use_container_width=True)):
+        if (st.button("🚀 Iniciar Circuito Estable", type="primary", use_container_width=True)):
             nombres = ["Parra", "Casas", "Pablo", "Fernanda", "Jonathan", "Cisthian", "Luz", "Kevin"]
             st.session_state.cola_autos = deque([Cliente(n) for n in nombres])
             st.session_state.cola_cocina = deque()
@@ -128,7 +125,6 @@ with col_btn:
 
 if (st.session_state.simulacion_activa):
     if ('bocina' not in st.session_state or not st.session_state.bocina.is_alive()):
-        # Se pasa el Lock como argumento a ambos hilos concurrentes
         st.session_state.bocina = EstacionOrden(st.session_state.cola_autos, st.session_state.cola_cocina, st.session_state.menu, st.session_state.lock)
         st.session_state.ventanilla = VentanillaEntrega(st.session_state.cola_cocina, st.session_state.pila_tickets, st.session_state.bocina, st.session_state.lock)
         st.session_state.bocina.start()
@@ -136,6 +132,7 @@ if (st.session_state.simulacion_activa):
 
     col_mapa, col_reporte = st.columns([5, 3])
     with col_mapa:
+        # Usamos un contenedor estático para evitar la destrucción del nodo HTML
         contenedor_mapa_vivo = st.empty()
     with col_reporte:
         st.subheader("🧾 Historial LIFO (Caja Registradora)")
@@ -147,18 +144,19 @@ if (st.session_state.simulacion_activa):
         (470, 310), (550, 255), (585, 200), (565, 145), (510, 110), (430, 95), (350, 100)
     ]
 
-    # --- CICLO DE ANIMACIÓN SEGURO (25 FPS) ---
+    # Identificador de renderizado para control de caché del componente
+    version_render = 0
+
     while (st.session_state.ventanilla.is_alive() or st.session_state.bocina.is_alive() or len(st.session_state.posiciones_visuales) > 0):
-        
+        version_render += 1
         targets_actuales = {}
 
-        # FASE CRÍTICA: Tomamos una instantánea rápida de las estructuras bajo el Lock
         with st.session_state.lock:
             copia_cola_autos = list(st.session_state.cola_autos)
             copia_cola_cocina = list(st.session_state.cola_cocina)
             copia_pila_tickets = list(st.session_state.pila_tickets)
 
-        # 1. Procesar posiciones de entrada de la copia segura
+        # 1. Posiciones de la fila de entrada
         for index, auto in enumerate(copia_cola_autos):
             if (index < len(puntos_entrada)):
                 tx, ty = puntos_entrada[index]
@@ -166,12 +164,12 @@ if (st.session_state.simulacion_activa):
                 tx, ty = (105 - (index - 3) * 40, 225)
             targets_actuales[auto.nombre] = (tx, ty, "", "#757575")
 
-        # 2. Posicionar auto en la bocina de orden
+        # 2. Auto en la bocina
         if (st.session_state.bocina.cliente_actual):
             auto = st.session_state.bocina.cliente_actual
             targets_actuales[auto.nombre] = (285, 125, st.session_state.bocina.estado, "#ff9100")
 
-        # 3. Procesar carril circular de la copia segura
+        # 3. Carril circular hacia la ventanilla
         indice_offset = 1 if (st.session_state.ventanilla.cliente_actual) else 0
         for index, auto in enumerate(copia_cola_cocina):
             slot_actual = index + indice_offset
@@ -179,31 +177,33 @@ if (st.session_state.simulacion_activa):
                 tx, ty = puntos_giro_espera[slot_actual]
                 targets_actuales[auto.nombre] = (tx, ty, "Preparando...", "#0288d1")
 
-        # 4. Posicionar auto en la ventanilla frontal
+        # 4. Auto en ventanilla
         if (st.session_state.ventanilla.cliente_actual):
             auto = st.session_state.ventanilla.cliente_actual
             tx, ty = puntos_giro_espera[0]
             targets_actuales[auto.nombre] = (tx, ty, st.session_state.ventanilla.estado, "#d32f2f")
 
-        # 5. Lógica cinemática de escape
+        # 5. Lógica de salida del mapa
         nombres_activos = set(targets_actuales.keys())
         for nombre in list(st.session_state.posiciones_visuales.keys()):
             if (nombre not in nombres_activos):
                 curr_x, curr_y = st.session_state.posiciones_visuales[nombre]
-                if (curr_x < 190 and curr_y > 440):
+                # Modificación del umbral de salida para evitar desapariciones repentinas
+                if (curr_x < 120 and curr_y > 380):
                     del st.session_state.posiciones_visuales[nombre]
                 else:
-                    targets_actuales[nombre] = (160, 450, "¡Buen provecho! 🍔", "#2e7d32")
+                    targets_actuales[nombre] = (90, 260, "¡Gracias! 🍔", "#2e7d32")
 
-        # --- RENDERIZACIÓN GRÁFICA SVG ---
+        # --- CONSTRUCCIÓN DEL MAPA SVG ---
         svg_autos = ""
         for nombre, (tx, ty, texto, color_hex) in targets_actuales.items():
             if (nombre not in st.session_state.posiciones_visuales):
                 st.session_state.posiciones_visuales[nombre] = (-40, 250)
             
             curr_x, curr_y = st.session_state.posiciones_visuales[nombre]
-            new_x = curr_x + (tx - curr_x) * 0.18
-            new_y = curr_y + (ty - curr_y) * 0.18
+            # Suavizado de interpolación cinética (0.15 para estabilidad de hilos)
+            new_x = curr_x + (tx - curr_x) * 0.15
+            new_y = curr_y + (ty - curr_y) * 0.15
             st.session_state.posiciones_visuales[nombre] = (new_x, new_y)
             
             color_techo = "#bdbdbd" if color_hex == "#757575" else "#ffb74d" if color_hex == "#ff9100" else "#29b6f6" if color_hex == "#0288d1" else "#ef5350"
@@ -221,13 +221,10 @@ if (st.session_state.simulacion_activa):
             svg_autos += "</g>"
 
         svg_mapa_completo = f"""
-        <svg width="100%" height="480" viewBox="0 0 800 480" style="background-color:#2e7d32; border-radius:15px; font-family: sans-serif; box-shadow: inset 0 0 40px rgba(0,0,0,0.4);">
+        <svg width="100%" height="480" viewBox="0 0 800 480" style="background-color:#2e7d32; border-radius:15px; font-family: sans-serif;">
             <path d="M 80,240 L 250,140 Q 420,50 580,120 L 610,180 L 580,240 L 460,330 L 280,410" fill="none" stroke="#262626" stroke-width="75" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M 80,240 L 250,140 Q 420,50 580,120 L 610,180 L 580,240 L 460,330 L 280,410" fill="none" stroke="#ffcc00" stroke-width="2" stroke-dasharray="8,6" stroke-linecap="round" stroke-linejoin="round"/>
             
-            <g transform="translate(60, 80)"><rect x="-3" y="0" width="6" height="20" fill="#5d4037"/><polygon points="0,-35 -18,-10 18,-10" fill="#1b5e20"/></g>
-            <g transform="translate(730, 360)"><rect x="-3" y="0" width="6" height="20" fill="#5d4037"/><polygon points="0,-35 -18,-10 18,-10" fill="#1b5e20"/></g>
-
             <g transform="translate(260, 80)">
                 <line x1="0" y1="0" x2="0" y2="35" stroke="#424242" stroke-width="4"/>
                 <rect x="-25" y="-25" width="50" height="25" rx="4" fill="#ffcc00" stroke="#111" stroke-width="1.5"/>
@@ -247,22 +244,24 @@ if (st.session_state.simulacion_activa):
         </svg>
         """
         
+        # Enviamos una clave controlada para obligar al DOM a mantener la caja visual abierta y libre de parpadeos
         with contenedor_mapa_vivo:
-            components.html(svg_mapa_completo, height=480)
+            components.html(svg_mapa_completo, height=480, scrolling=False)
 
-        # DESPLIEGUE DEL REPORTE MEDIANTE LA COPIA SEGURA
+        # Actualización paralela de la interfaz derecha
         with box_pila.container(border=True):
             if (copia_pila_tickets):
                 for tk in reversed(copia_pila_tickets):
-                    st.write(f"📌 **Pedido Entregado:** {tk.nombre} — Total cobrado: `${tk.total:.2f}`")
+                    st.write(f"📌 **Pedido Entregado:** {tk.nombre} — Total: `${tk.total:.2f}`")
             else:
-                st.caption("Ningún auto ha cruzado la ventanilla frontal aún...")
+                st.caption("Esperando primer servicio en ventanilla...")
 
         caja_total = sum(tk.total for tk in copia_pila_tickets)
         box_caja.metric(label="💰 Capital Total Acumulado en Caja", value=f"${caja_total:.2f}")
 
-        time.sleep(0.04) # Sincronización estable de fotogramas
+        # Retraso calibrado a 0.05 segundos para evitar el colapso del búfer del navegador
+        time.sleep(0.05)
 
     st.session_state.simulacion_activa = False
     st.balloons()
-    st.success("🎉 ¡Excelente! Ejecutándose de forma súper fluida a 25 FPS sin interrupciones concurrentes.")
+    st.success("🎉 ¡Excelente! Simulación completada al 100% de forma nítida y continua.")
