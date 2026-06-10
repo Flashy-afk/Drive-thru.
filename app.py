@@ -61,27 +61,82 @@ class CajeroVisual(threading.Thread):
 # --- CONFIGURACIÓN DE LA PÁGINA DE STREAMLIT ---
 st.set_page_config(page_title="Cangreburger - El Cangrejo Cascararrabias", page_icon="🍔", layout="wide")
 
-# --- INYECCIÓN DE ESTILO CSS (Temática Submarina e Industrial) ---
+# --- INYECCIÓN DE ESTILO CSS (Temática Submarina, Neón e IMAGEN DE FONDO) ---
+# He añadido la URL de una imagen de fondo que recrea el mar de Fondo de Bikini.
+# Puedes cambiar la URL por otra imagen si lo prefieres.
 st.markdown("""
     <style>
-    /* Fondo general estilo océano profundo */
+    /* Imagen de fondo estilo mar de Bob Esponja */
     .stApp {
-        background-color: #0d1f2d;
-        color: #e0e0e0;
+        background-image: url("https://img.freepik.com/foto-gratis/fondo-marino-caracteristico-dibujos-animados_23-2150165502.jpg");
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: center;
+        color: #f0f0f0; /* Texto claro para que contraste */
     }
+    
+    /* Overlay para oscurecer un poco el fondo y mejorar la legibilidad del texto */
+    .stApp::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparente negro */
+        z-index: -1;
+    }
+
     /* Títulos con estilo neón amarillo como el letrero principal */
     h1, h2, h3 {
         color: #ffcc00 !important;
-        text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        text-shadow: 0 0 10px rgba(255, 204, 0, 0.8);
         font-family: 'Arial Black', Gadget, sans-serif;
     }
+    
+    /* Subtítulos en un azul eléctrico para que resalten */
+    h4, h5, h6 {
+        color: #00e6ff !important;
+        text-shadow: 0 0 8px rgba(0, 230, 255, 0.6);
+    }
+
     /* Estilo para los contenedores (Ventanillas) imitando metal de submarino/escotilla */
     div[data-testid="stBlock"] {
-        border-color: #4a6984 !important;
+        background-color: rgba(13, 31, 45, 0.8) !important; /* Fondo semi-oscuro para contraste */
+        border: 2px solid #4a6984 !important;
+        border-radius: 15px;
+        padding: 20px;
     }
-    /* Customizar las métricas de dinero al estilo Don Cangrejo */
+
+    /* Customizar las métricas de dinero al estilo Don Cangrejo (Verde) */
     div[data-testid="stMetricValue"] {
         color: #4caf50 !important;
+        font-weight: bold;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: #ffcc00 !important;
+    }
+
+    /* Estilo para el botón de inicio */
+    button[kind="primary"] {
+        background-color: #ffcc00 !important;
+        color: #0d1f2d !important;
+        border: 2px solid #ffcc00 !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease;
+    }
+    button[kind="primary"]:hover {
+        background-color: #0d1f2d !important;
+        color: #ffcc00 !important;
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
+    }
+
+    /* Estilo para los mensajes de info, success, warning */
+    .stAlert {
+        background-color: rgba(0, 0, 0, 0.3) !important;
+        border-radius: 10px;
+        color: #f0f0f0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -121,8 +176,8 @@ if not st.session_state.simulacion_activa:
 if st.session_state.simulacion_activa:
     
     if 'v1' not in st.session_state or not st.session_state.v1.is_alive():
-        st.session_state.v1 = CajeroVisual("⚙️ VENTANILLA DE BOB ESPONJA", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
-        st.session_state.v2 = CajeroVisual("⚙️ VENTANILLA DE CALAMARDO", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
+        st.session_state.v1 = CajeroVisual("👨‍🍳 Cocina de Bob Esponja", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
+        st.session_state.v2 = CajeroVisual("🦑 Mostrador de Calamardo", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
         st.session_state.v1.start()
         st.session_state.v2.start()
 
@@ -130,7 +185,7 @@ if st.session_state.simulacion_activa:
     col_izquierda, col_derecha = st.columns([2, 1])
 
     with col_izquierda:
-        st.subheader("👨‍🍳 Cocina en Paralelo")
+        st.subheader("⚙️ Ventanillas de Atención (Paralelo)")
         v_col1, v_col2 = st.columns(2)
         
         box_v1 = v_col1.empty()
@@ -140,54 +195,21 @@ if st.session_state.simulacion_activa:
         box_cola = st.empty()
 
     with col_derecha:
-        st.subheader("🗂️ Pilas (Stack de Pedidos - LIFO)")
+        st.subheader("🗂️ Pilas (Stack de Tickets - LIFO)")
         box_pila = st.empty()
         
-        st.subheader("🦀 El Cofre del Dinero (Don Cangrejo)")
+        st.subheader("🦀 El Cofre de Don Cangrejo (Corte)")
         box_caja = st.empty()
 
     # CICLO DE REFRESCO DE LA PANTALLA
     while st.session_state.v1.is_alive() or st.session_state.v2.is_alive():
         
         # Ventanilla 1 Visual (Bob Esponja)
-        with box_v1.container(border=True):
-            st.markdown(f"### {st.session_state.v1.nombre_cajero}")
+        with box_v1.container():
+            st.markdown(f"#### {st.session_state.v1.nombre_cajero}")
             st.info(st.session_state.v1.estado)
             st.progress(st.session_state.v1.progreso)
             if st.session_state.v1.cliente_actual:
-                st.caption(f"Cliente actual: **{st.session_state.v1.cliente_actual.nombre}**")
+                st.caption(f"Cliente: **{st.session_state.v1.cliente_actual.nombre}**")
 
-        # Ventanilla 2 Visual (Calamardo)
-        with box_v2.container(border=True):
-            st.markdown(f"### {st.session_state.v2.nombre_cajero}")
-            st.info(st.session_state.v2.estado)
-            st.progress(st.session_state.v2.progreso)
-            if st.session_state.v2.cliente_actual:
-                st.caption(f"Cliente actual: **{st.session_state.v2.cliente_actual.nombre}**")
-
-        # Cola de Clientes Visual (FIFO)
-        autos_restantes = [c.nombre for c in st.session_state.cola_autos]
-        if autos_restantes:
-            box_cola.success(" ──> ".join([f"🐟 [{a}]" for a in autos_restantes]))
-        else:
-            box_cola.warning("🛑 ¡No hay más clientes en la cola! Fondo de Bikini está satisfecho.")
-
-        # Pila de Tickets Visual (LIFO)
-        tickets_impresos = list(st.session_state.pila_tickets)
-        if tickets_impresos:
-            with box_pila.container():
-                for tk in reversed(tickets_impresos):
-                    st.text(f"🧾 Orden de {tk.nombre} - Total: ${tk.total:.2f}")
-        else:
-            box_pila.caption("Esperando que salga la primera Cangreburger...")
-
-        # Conteo de Caja de Don Cangrejo
-        dinero_actual = sum(tk.total for tk in tickets_impresos)
-        box_caja.metric(label="💵 Monedas acumuladas", value=f"${dinero_actual:.2f}")
-        
-        time.sleep(0.3)
-
-    # --- CUANDO LOS HILOS TERMINAN ---
-    st.session_state.simulacion_activa = False
-    st.balloons()
-    st.success("🎉 ¡El caos ha sido resuelto! Don Cangrejo está feliz con las ganancias y Bob Esponja ganó el premio al empleado del mes.")
+        # Ventan
