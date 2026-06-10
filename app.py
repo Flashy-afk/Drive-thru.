@@ -6,7 +6,7 @@ import threading
 from producto import Producto
 from cliente import Cliente
 
-# --- CLASE CAJERO (Mantiene la lógica de hilos) ---
+# --- CLASE CAJERO (Lógica de Hilos) ---
 class CajeroVisual(threading.Thread):
     def __init__(self, nombre_cajero, cola_clientes, menu_restaurante, pila_tickets):
         super().__init__()
@@ -14,7 +14,7 @@ class CajeroVisual(threading.Thread):
         self.cola_clientes = cola_clientes
         self.menu = menu_restaurante
         self.pila_tickets = pila_tickets
-        self.estado = "☕ Esperando..."
+        self.estado = "☕ Esperando auto..."
         self.cliente_actual = None
         self.progreso = 0
 
@@ -29,41 +29,55 @@ class CajeroVisual(threading.Thread):
 
     def atender_cliente(self, cliente):
         self.cliente_actual = cliente
-        self.estado = f"🍔 Tomando pedido: {cliente.nombre}"
+        self.estado = f"🍔 Tomando orden: {cliente.nombre}"
         self.progreso = 10
-        for _ in range(random.randint(1, 3)):
+        cantidad_productos = random.randint(1, 3)
+        for _ in range(cantidad_productos):
             cliente.agregar_producto(random.choice(self.menu))
         
-        tiempo = random.randint(2, 5)
-        self.estado = f"🍳 Cocinando: {cliente.nombre}"
+        tiempo_preparacion = random.randint(2, 5)
+        self.estado = f"🍳 Cocinando para {cliente.nombre}..."
         for i in range(10):
-            time.sleep(tiempo / 10)
+            time.sleep(tiempo_preparacion / 10)
             self.progreso = 10 + (i * 9)
 
-        self.estado = f"✅ Pedido listo: {cliente.nombre}"
-        self.pila_tickets.append(cliente)
-        time.sleep(1)
+        if (cliente.total > 0):
+            self.estado = f"✅ Pedido entregado a {cliente.nombre}"
+            self.pila_tickets.append(cliente)
+            time.sleep(1)
+            
         self.cliente_actual = None
         self.estado = "☕ Esperando..."
         self.progreso = 0
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Carl's Jr. Drive-Thru", layout="wide")
+st.set_page_config(page_title="Carl's Jr. Drive-Thru", page_icon="🍔", layout="wide")
 st.title("🍔 Circuito Drive-Thru: Carl's Jr.")
+st.markdown("### Flujo: 🎙️ Pedido ➔ 🍳 Preparación ➔ 💰 Caja")
+
+if 'menu' not in st.session_state:
+    st.session_state.menu = [
+        Producto("Hamburguesa Clásica", 90.00),
+        Producto("Papas Fritas Grandes", 45.50),
+        Producto("Refresco de Cola", 30.00),
+        Producto("Malteada de Vainilla", 55.00)
+    ]
 
 if 'simulacion_activa' not in st.session_state:
     st.session_state.simulacion_activa = False
     st.session_state.cola_autos = deque()
     st.session_state.pila_tickets = []
-    st.session_state.menu = [Producto("Hamburguesa", 90.0), Producto("Papas", 45.5), Producto("Refresco", 30.0)]
 
+# --- BOTÓN DE INICIO ---
 if not st.session_state.simulacion_activa:
-    if st.button("🚀 Iniciar Recorrido"):
-        st.session_state.cola_autos = deque([Cliente(n) for n in ["Parra", "Casas", "Pablo", "Fernanda", "Jonathan", "Cisthian", "Luz", "Kevin"]])
+    if st.button("🚀 Iniciar Emulación", type="primary", use_container_width=True):
+        nombres = ["Parra", "Casas", "Pablo", "Fernanda", "Jonathan", "Cisthian", "Luz", "Kevin"]
+        st.session_state.cola_autos = deque([Cliente(n) for n in nombres])
+        st.session_state.pila_tickets = []
         st.session_state.simulacion_activa = True
         st.rerun()
 
-# --- DISEÑO DINÁMICO ---
+# --- SIMULACIÓN ACTIVA (Diseño Lineal) ---
 if st.session_state.simulacion_activa:
     if 'v1' not in st.session_state or not st.session_state.v1.is_alive():
         st.session_state.v1 = CajeroVisual("VENTANILLA 1", st.session_state.cola_autos, st.session_state.menu, st.session_state.pila_tickets)
@@ -71,45 +85,57 @@ if st.session_state.simulacion_activa:
         st.session_state.v1.start()
         st.session_state.v2.start()
 
-    # Layout de "Circuito"
-    st.markdown("### 🗺️ Circuito del Drive-Thru")
-    
-    # 1. Zona de Menú (Inicio)
-    st.caption("Fase 1: Pedido")
-    box_cola = st.empty()
-    
-    # 2. Zona de Atención (Medio - Ventanillas)
-    c1, c2 = st.columns(2)
-    box_v1 = c1.empty()
-    box_v2 = c2.empty()
-    
-    # 3. Zona de Caja (Final)
-    st.caption("Fase 2: Pago y Recolección")
-    box_pila = st.empty()
+    # --- DISEÑO LINEAL: Izquierda a Derecha ---
+    col1, col2, col3 = st.columns([1, 2, 1])
 
+    with col1:
+        st.subheader("1. 🎙️ Pedido")
+        box_cola = st.empty()
+
+    with col2:
+        st.subheader("2. 🍳 Preparación")
+        c2a, c2b = st.columns(2)
+        box_v1 = c2a.empty()
+        box_v2 = c2b.empty()
+
+    with col3:
+        st.subheader("3. 💰 Caja / Salida")
+        box_caja = st.empty()
+        box_pila = st.container(height=300)
+
+    # Bucle de actualización
     while st.session_state.v1.is_alive() or st.session_state.v2.is_alive():
-        # Representación del flujo: 
-        # Mostramos quienes están en la cola (esperando) y quienes están siendo atendidos (en ventanilla)
         
-        # Fila de espera
-        autos_esperando = [c.nombre for c in st.session_state.cola_autos]
-        box_cola.info("Fila de espera: " + " ➔ ".join([f"🚗 {a}" for a in autos_esperando]))
+        # 1. Zona Pedido (Fila)
+        autos = [c.nombre for c in st.session_state.cola_autos]
+        if autos:
+            box_cola.write(f"🚗 **{autos[0]}** (Ordenando...)")
+            box_cola.caption(f"Esperando en fila: {', '.join(autos[1:]) if len(autos)>1 else 'Ninguno'}")
+        else:
+            box_cola.write("🏁 Fila despejada")
 
-        # Ventanillas (Movimiento al centro)
+        # 2. Zona Preparación (Ventanillas)
         def render_v(box, c):
-            if c.cliente_actual:
-                box.success(f"📍 ATENDIENDO A: 🚗 {c.cliente_actual.nombre} | Progreso: {c.progreso}%")
-            else:
-                box.write("Ventanilla Libre")
+            with box.container(border=True):
+                st.write(f"**{c.nombre_cajero}**")
+                st.caption(c.estado)
+                st.progress(c.progreso / 100)
+                if c.cliente_actual: st.info(f"👤 {c.cliente_actual.nombre}")
         
         render_v(box_v1, st.session_state.v1)
         render_v(box_v2, st.session_state.v2)
 
-        # Caja
+        # 3. Zona Caja
         tickets = list(st.session_state.pila_tickets)
-        box_pila.write(f"🧾 Último cliente atendido: **{tickets[-1].nombre if tickets else 'Ninguno'}** | Venta Total: ${sum(tk.total for tk in tickets):.2f}")
+        box_caja.metric("Venta Total", f"${sum(tk.total for tk in tickets):.2f}")
+        
+        box_pila.empty()
+        with box_pila:
+            for tk in reversed(tickets):
+                st.text(f"✅ {tk.nombre}: ${tk.total:.2f}")
 
-        time.sleep(0.2) # Velocidad de la animación
+        time.sleep(0.3)
 
-    st.success("🎉 ¡Todos los autos completaron el circuito!")
     st.session_state.simulacion_activa = False
+    st.balloons()
+    st.success("🎉 ¡Circuito finalizado con éxito!")
