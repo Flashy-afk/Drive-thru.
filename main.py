@@ -5,13 +5,13 @@ from cliente import Cliente
 from cajero import Cajero
 
 def main():
-    print(" === INICIANDO SIMULACIÓN CARLS,JR   === \n")
+    print(" === INICIANDO SIMULACIÓN KRUSTY KRAB   === \n")
 
     menu_carls = [
-        Producto("Hamburguesa Clásica", 90.00),
-        Producto("Papas Fritas Grandes", 45.50),
-        Producto("Refresco de Cola", 30.00),
-        Producto("Malteada de Vainilla", 55.00)]
+        Producto("Cangreburger", 90.00),
+        Producto("Papas Fritas Bob Esponja", 45.50),
+        Producto("Batido Kelp", 30.00),
+        Producto("Malteada Marina", 55.00)]
 
     cola_autos = deque()
 
