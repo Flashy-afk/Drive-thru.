@@ -12,10 +12,10 @@ def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
+# --- CONFIGURACIÓN DE LA PÁGINA DE STREAMLIT ---
 st.set_page_config(page_title="Cangreburger - El Cangrejo Cascararrabias", page_icon="🍔", layout="wide")
 
-# Intentamos cargar tu imagen local 'fondo.jpg'. Si no la has descargado aún, no romperá la app.
+# Intentamos cargar tu imagen local 'fondo.jpg'
 try:
     bin_str = get_base64_image("fondo.jpg")
     background_css = f"""
@@ -31,63 +31,76 @@ try:
     """
     st.markdown(background_css, unsafe_allow_html=True)
 except FileNotFoundError:
-    # Si aún no descargas la imagen, te pone un fondo azul oscuro temporal para que no falle
+    # Si aún no subes la imagen, deja este azul oscuro temporal
     st.markdown("<style>.stApp { background-color: #0d1f2d; }</style>", unsafe_allow_html=True)
 
 
-# --- INYECCIÓN DEL ESTILO ADICIONAL (TEXTOS Y CONTENEDORES) ---
+# --- INYECCIÓN DEL ESTILO ADICIONAL (TEXTOS Y CONTENEDORES OPTIMIZADOS) ---
 st.markdown("""
     <style>
-    /* Capa oscura general para que el texto sea perfectamente legible sobre el mar */
+    /* Capa oscura general muy ligera sobre el mar para dar contraste sin tapar el dibujo */
     .stApp::before {
         content: "";
         position: absolute;
         top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(0, 15, 30, 0.65); 
+        background-color: rgba(255, 255, 255, 0.1); 
         z-index: -1;
     }
 
-   
+    /* TÍTULOS PRINCIPALES: Azul marino industrial con borde blanco grueso para máximo contraste */
     h1, h2, h3 {
         color: #001c3d !important;
-        text-shadow: 0 0 12px rgba(255, 204, 0, 0.8);
         font-family: 'Arial Black', Gadget, sans-serif;
+        -webkit-text-stroke: 1.5px #ffffff; /* Borde blanco alrededor de las letras */
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
     }
     
-    h4, h5, h6 {
-        color: #001c3d !important;
-        text-shadow: 0 0 8px rgba(0, 230, 255, 0.6);
+    /* SUBTÍTULOS Y TEXTOS SECUNDARIOS FUERA DE LAS CAJAS */
+    h4, h5, h6, p, span {
+        color: #002b5c !important;
+        font-weight: bold !important;
     }
 
     /* Contenedores estilo caja metálica / industrial del póster */
     div[data-testid="stClassName"]-stBlock, div[data-testid="stBlock"] {
-        background-color: rgba(10, 25, 40, 0.85) !important; 
-        border: 2px solid #4a6984 !important;
+        background-color: rgba(10, 35, 60, 0.92) !important; 
+        border: 3px solid #4a6984 !important;
         border-radius: 12px;
         padding: 15px;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
     }
 
-    /* Métricas de dinero */
+    /* Forzar que los textos DENTRO de las cajas de simulación sean blancos/claros */
+    div[data-testid="stBlock"] h4, 
+    div[data-testid="stBlock"] p, 
+    div[data-testid="stBlock"] span,
+    div[data-testid="stBlock"] div {
+        color: #ffffff !important;
+        -webkit-text-stroke: 0px !important; 
+        text-shadow: none !important;
+    }
+
+    /* Métricas de dinero estilo Don Cangrejo */
     div[data-testid="stMetricValue"] {
         color: #4caf50 !important;
-        font-weight: bold;
+        font-weight: bold !important;
     }
     div[data-testid="stMetricLabel"] {
         color: #ffcc00 !important;
     }
 
-    /* Botón de inicio */
+    /* Botón de inicio llamativo (Rojo como Don Cangrejo) */
     button[kind="primary"] {
-        background-color: #ffcc00 !important;
-        color: #0d1f2d !important;
+        background-color: #d32f2f !important;
+        color: #ffffff !important;
         font-weight: bold !important;
-        border: 2px solid #ffcc00 !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
     }
     button[kind="primary"]:hover {
-        background-color: #0d1f2d !important;
-        color: #ffcc00 !important;
-        box-shadow: 0 0 15px rgba(255, 204, 0, 0.8);
+        background-color: #ffffff !important;
+        color: #d32f2f !important;
+        border: 2px solid #d32f2f !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -143,7 +156,7 @@ class CajeroVisual(threading.Thread):
 
 
 # --- CUERPO PRINCIPAL DEL FRONTEND ---
-st.title(".....🍔 El Cangrejo Cascararrabias — Gestión de Pedidos.....")
+st.title("🍔 El Cangrejo Cascararrabias — Gestión de Pedidos")
 st.markdown("### 🌊 ¡Resolviendo el CAOS en la cocina con Estructuras de Datos!")
 st.write("Con la supervisión de **DON CANGREJO** y la eficiencia de **BOB ESPONJA**.")
 st.write("---")
