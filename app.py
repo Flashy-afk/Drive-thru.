@@ -3,9 +3,7 @@ import time
 from collections import deque
 import random
 import threading
-import base64  # <--- IMPORTANTE: Nos ayuda a leer la imagen local
-from producto import Producto
-from cliente import Cliente
+import base64
 
 # --- FUNCIÓN PARA CARGAR LA IMAGEN LOCAL EN STREAMLIT ---
 def get_base64_image(image_path):
@@ -31,71 +29,82 @@ try:
     """
     st.markdown(background_css, unsafe_allow_html=True)
 except FileNotFoundError:
-    # Si aún no subes la imagen, deja este azul oscuro temporal
     st.markdown("<style>.stApp { background-color: #0d1f2d; }</style>", unsafe_allow_html=True)
 
 
-# --- INYECCIÓN DEL ESTILO ADICIONAL (TEXTOS Y CONTENEDORES OPTIMIZADOS) ---
+# --- INYECCIÓN DEL ESTILO ADICIONAL (MÁXIMO CONTRASSTE Y VISIBILIDAD) ---
 st.markdown("""
     <style>
-    /* Capa oscura general muy ligera sobre el mar para dar contraste sin tapar el dibujo */
-    .stApp::before {
-        content: "";
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(255, 255, 255, 0.1); 
-        z-index: -1;
-    }
-
-    /* TÍTULOS PRINCIPALES: Azul marino industrial con borde blanco grueso para máximo contraste */
+    /* TÍTULOS PRINCIPALES (Fuera de las cajas): Azul industrial con borde blanco grueso */
     h1, h2, h3 {
         color: #001c3d !important;
         font-family: 'Arial Black', Gadget, sans-serif;
-        -webkit-text-stroke: 1.5px #ffffff; /* Borde blanco alrededor de las letras */
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* SUBTÍTULOS Y TEXTOS SECUNDARIOS FUERA DE LAS CAJAS */
-    h4, h5, h6, p, span {
-        color: #002b5c !important;
-        font-weight: bold !important;
+        -webkit-text-stroke: 1.5px #ffffff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
     }
 
-    /* Contenedores estilo caja metálica / industrial del póster */
-    div[data-testid="stClassName"]-stBlock, div[data-testid="stBlock"] {
-        background-color: rgba(10, 35, 60, 0.92) !important; 
+    /* CONTENEDORES / CAJAS (Un poco más oscuras y sólidas para que no se transparente el dibujo de atrás) */
+    div[data-testid="stMetric"], div[data-testid="stBlock"] {
+        background-color: rgba(6, 20, 36, 0.95) !important; 
         border: 3px solid #4a6984 !important;
         border-radius: 12px;
         padding: 15px;
-        box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+        box-shadow: 5px 5px 15px rgba(0,0,0,0.6);
     }
 
-    /* Forzar que los textos DENTRO de las cajas de simulación sean blancos/claros */
+    /* FORZAR QUE ABSOLUTAMENTE TODO EL TEXTO INTERNO SEA VISIBLE (Blanco y Amarillo) */
     div[data-testid="stBlock"] h4, 
     div[data-testid="stBlock"] p, 
-    div[data-testid="stBlock"] span,
-    div[data-testid="stBlock"] div {
+    div[data-testid="stBlock"] span, 
+    div[data-testid="stBlock"] div,
+    div[data-testid="stBlock"] label,
+    div[data-testid="stBlock"] small {
         color: #ffffff !important;
-        -webkit-text-stroke: 0px !important; 
+        -webkit-text-stroke: 0px !important;
         text-shadow: none !important;
+        font-weight: bold !important;
     }
 
-    /* Métricas de dinero estilo Don Cangrejo */
+    /* Títulos secundarios dentro de las cajas (Ej. "Cocina de Bob Esponja") en Amarillo Neón */
+    div[data-testid="stBlock"] h4 {
+        color: #ffcc00 !important;
+        font-size: 1.3rem !important;
+    }
+
+    /* ALERTAS DE STREAMLIT (Modificamos los cuadros de Info, Success y Warning para que se lean) */
+    .stAlert {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    }
+    .stAlert div {
+        color: #ffffff !important;
+    }
+
+    /* TEXTO DE LOS TICKETS (st.text) */
+    .stText pre {
+        color: #00ffcc !important; /* Estilo pantalla de computadora antigua */
+        background-color: rgba(0, 0, 0, 0.4) !important;
+        font-weight: bold !important;
+    }
+
+    /* MÉTRICAS DE DINERO (Don Cangrejo) */
     div[data-testid="stMetricValue"] {
         color: #4caf50 !important;
+        font-size: 2rem !important;
         font-weight: bold !important;
     }
     div[data-testid="stMetricLabel"] {
         color: #ffcc00 !important;
+        font-weight: bold !important;
     }
 
-    /* Botón de inicio llamativo (Rojo como Don Cangrejo) */
+    /* BOTÓN ROJO DON CANGREJO */
     button[kind="primary"] {
         background-color: #d32f2f !important;
         color: #ffffff !important;
         font-weight: bold !important;
         border: 2px solid #ffffff !important;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.4);
     }
     button[kind="primary"]:hover {
         background-color: #ffffff !important;
@@ -212,35 +221,4 @@ if st.session_state.simulacion_activa:
             st.markdown(f"#### {st.session_state.v1.nombre_cajero}")
             st.info(st.session_state.v1.estado)
             st.progress(st.session_state.v1.progreso)
-            if st.session_state.v1.cliente_actual:
-                st.caption(f"Cliente: **{st.session_state.v1.cliente_actual.nombre}**")
-
-        with box_v2.container(border=True):
-            st.markdown(f"#### {st.session_state.v2.nombre_cajero}")
-            st.info(st.session_state.v2.estado)
-            st.progress(st.session_state.v2.progreso)
-            if st.session_state.v2.cliente_actual:
-                st.caption(f"Cliente: **{st.session_state.v2.cliente_actual.nombre}**")
-
-        autos_restantes = [c.nombre for c in st.session_state.cola_autos]
-        if autos_restantes:
-            box_cola.success(" ──> ".join([f"🐟 [{a}]" for a in autos_restantes]))
-        else:
-            box_cola.warning("🛑 Fondo de Bikini está satisfecho.")
-
-        tickets_impresos = list(st.session_state.pila_tickets)
-        if tickets_impresos:
-            with box_pila.container(border=True):
-                for tk in reversed(tickets_impresos):
-                    st.text(f"🧾 Orden de {tk.nombre} - Total: ${tk.total:.2f}")
-        else:
-            box_pila.caption("Esperando primer ticket...")
-
-        dinero_actual = sum(tk.total for tk in tickets_impresos)
-        box_caja.metric(label="💵 Venta Acumulada", value=f"${dinero_actual:.2f}")
-        
-        time.sleep(0.3)
-
-    st.session_state.simulacion_activa = False
-    st.balloons()
-    st.success("🎉 ¡El caos ha sido resuelto de manera ordenada!")
+            if st.session_state.
