@@ -89,66 +89,67 @@ except FileNotFoundError:
 
 
 # =========================================================================
-# 4. ESTILOS VISUALES (TEXTOS NÍTIDOS E INDUSTRIALES)
+# 4. ESTILOS VISUALES (PANEL OSCURO Y TEXTOS NÍTIDOS)
 # =========================================================================
 st.markdown("""
     <style>
+    /* PANEL PRINCIPAL: Cristal polarizado oscuro detrás de la app */
+    .block-container {
+        background-color: rgba(15, 25, 35, 0.85) !important; /* Fondo muy oscuro */
+        padding: 3rem !important;
+        border-radius: 20px !important;
+        margin-top: 2rem !important;
+        margin-bottom: 2rem !important;
+        box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    /* TÍTULOS PRINCIPALES: Amarillo brillante con borde negro */
     h1, h2, h3 {
         color: #ffcc00 !important;
         font-family: 'Arial Black', Gadget, sans-serif;
-        -webkit-text-stroke: 1.2px #000000;
-        text-shadow: 0 0 15px rgba(255, 204, 0, 0.5), 2px 2px 4px rgba(0,0,0,0.8);
+        text-shadow: 3px 3px 5px #000000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 !important;
     }
-    div[data-testid="stMetric"], div[data-testid="stBlock"] {
-        background-color: rgba(33, 47, 61, 0.98) !important; 
-        border: 4px solid #5d6d7e !important;
-        border-radius: 14px;
-        padding: 18px;
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 5px 5px 15px rgba(0,0,0,0.5);
-    }
-    div[data-testid="stBlock"] h4, 
-    div[data-testid="stBlock"] p, 
-    div[data-testid="stBlock"] span, 
-    div[data-testid="stBlock"] div,
-    div[data-testid="stBlock"] label,
-    div[data-testid="stBlock"] small {
+
+    /* SUBTÍTULOS Y ETIQUETAS: Forzados a blanco puro con sombra */
+    h4, p, span, div, label {
         color: #ffffff !important;
-        -webkit-text-stroke: 0px !important;
-        text-shadow: none !important;
+        text-shadow: 2px 2px 4px #000000 !important;
         font-weight: bold !important;
     }
-    div[data-testid="stBlock"] h4 { color: #00ffcc !important; }
+
+    /* CAJAS DE ESTADO (Alertas y success) */
     .stAlert {
-        background-color: rgba(0, 0, 0, 0.6) !important;
-        border: 1px solid #5d6d7e !important;
+        background-color: rgba(0, 0, 0, 0.7) !important;
+        border: 2px solid #00ffcc !important;
+        border-radius: 10px;
     }
-    .stAlert div { color: #ffffff !important; }
+
+    /* TEXTO DE LA PILA DE TICKETS */
     .stText pre {
-        color: #ffcc00 !important;
-        background-color: rgba(10, 15, 20, 0.9) !important;
-        font-weight: bold !important;
-        border-left: 4px solid #ffcc00 !important;
+        color: #00ffcc !important;
+        background-color: rgba(0, 0, 0, 0.8) !important;
+        font-size: 16px !important;
+        border-left: 5px solid #ffcc00 !important;
+        padding: 10px !important;
+        text-shadow: none !important;
     }
+
+    /* COFRE DE DON CANGREJO (Métricas) */
     div[data-testid="stMetricValue"] {
         color: #2ecc71 !important;
-        font-size: 2.2rem !important;
+        font-size: 3rem !important;
+        text-shadow: 2px 2px 5px #000000 !important;
     }
-    div[data-testid="stMetricLabel"] { color: #ffffff !important; }
+
+    /* BOTÓN DE INICIO */
     button[kind="primary"] {
         background-color: #c0392b !important;
         color: #ffffff !important;
-        font-weight: bold !important;
-        border: 2px solid #ffffff !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    }
-    button[kind="primary"]:hover {
-        background-color: #ffffff !important;
-        color: #c0392b !important;
-        border: 2px solid #c0392b !important;
+        font-size: 20px !important;
+        border: 3px solid #ffffff !important;
     }
     </style>
     """, unsafe_allow_html=True)
-
 
 # =========================================================================
 # 5. INTERFAZ DE USUARIO PRINCIPAL
@@ -173,7 +174,7 @@ if 'simulacion_activa' not in st.session_state:
 
 if not st.session_state.simulacion_activa:
     if st.button("🚀 ¡Iniciar Proyecto de Turnos de Cangreburgers!", type="primary", use_container_width=True):
-        nombres = ["Patricio", "Calamardo", "Arenita", "Sra. Puff", "Plankton", "Gary", "Sirenmán", "Chico Percance"]
+        nombres = ["Parra", "Casas", "Pablo", "Fernanda", "Jonathan", "Cisthian", "Luz", "Kevin"]
         st.session_state.cola_autos = deque([Cliente(n) for n in nombres])
         st.session_state.pila_tickets = []
         st.session_state.simulacion_activa = True
