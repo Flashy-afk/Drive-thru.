@@ -2,18 +2,74 @@ import streamlit as st
 import time
 from collections import deque
 import random
-import threading
 import base64
 
-# --- FUNCIÓN PARA CARGAR LA IMAGEN LOCAL EN STREAMLIT ---
+# =========================================================================
+# 1. IMPORTACIÓN DE TUS MÓDULOS DE GITHUB
+# =========================================================================
+from producto import Producto
+from cliente import Cliente
+from cajero import Cajero  # Importamos tu clase original
+
+# =========================================================================
+# 2. ADAPTACIÓN DEL CAJERO PARA LA WEB (HERENCIA)
+# =========================================================================
+class CajeroVisual(Cajero):
+    def __init__(self, nombre_cajero, cola_clientes, menu_restaurante, pila_tickets):
+        # Llamamos al constructor de tu clase padre (cajero.py)
+        super().__init__(nombre_cajero, cola_clientes, menu_restaurante, pila_tickets)
+        
+        # Añadimos variables exclusivas para la interfaz gráfica
+        self.estado = "⚓ Esperando cliente en el fondo del mar..."
+        self.cliente_actual = None
+        self.progreso = 0
+
+    def run(self):
+        while True:
+            try:
+                cliente = self.cola_clientes.popleft()
+            except IndexError:
+                self.estado = "🔴 Turno Finalizado (Don Cangrejo cuenta los billetes)"
+                break
+            self.atender_cliente_visual(cliente)
+
+    def atender_cliente_visual(self, cliente):
+        self.cliente_actual = cliente
+        self.estado = f"📝 Tomando orden de {cliente.nombre}..."
+        self.progreso = 10
+        
+        # Replicamos la lógica de tu cajero.py, pero animando la pantalla
+        cantidad_productos = random.randint(1, 3)
+        for _ in range(cantidad_productos):
+            producto_elegido = random.choice(self.menu)
+            cliente.agregar_producto(producto_elegido)
+            
+        tiempo_preparacion = random.randint(2, 5)
+        self.estado = f"🍳 ¡Bob Esponja está cocinando el pedido de {cliente.nombre}!"
+        
+        for i in range(10):
+            time.sleep(tiempo_preparacion / 10)
+            self.progreso = 10 + (i * 9)
+
+        if cliente.total > 0:
+            self.estado = f"🍔 ¡Cangreburger Entregada a {cliente.nombre}!"
+            self.pila_tickets.append(cliente)
+            time.sleep(1.5)
+            
+        self.cliente_actual = None
+        self.estado = "⚓ Esperando cliente en el fondo del mar..."
+        self.progreso = 0
+
+
+# =========================================================================
+# 3. CARGA DE ASSETS Y CONFIGURACIÓN
+# =========================================================================
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
 
-# --- CONFIGURACIÓN DE LA PÁGINA DE STREAMLIT ---
 st.set_page_config(page_title="Cangreburger - El Cangrejo Cascararrabias", page_icon="🍔", layout="wide")
 
-# Intentamos cargar tu imagen local 'fondo.jpg'
 try:
     bin_str = get_base64_image("fondo.jpg")
     background_css = f"""
@@ -32,27 +88,24 @@ except FileNotFoundError:
     st.markdown("<style>.stApp { background-color: #34495e; }</style>", unsafe_allow_html=True)
 
 
-# --- INYECCIÓN DEL ESTILO ADICIONAL (COLORES INDUSTRIALES DEL PÓSTER) ---
+# =========================================================================
+# 4. ESTILOS VISUALES (TEXTOS NÍTIDOS E INDUSTRIALES)
+# =========================================================================
 st.markdown("""
     <style>
-    /* TÍTULOS PRINCIPALES: Amarillo neón con contorno oscuro simulando el letrero mecánico superior */
     h1, h2, h3 {
         color: #ffcc00 !important;
         font-family: 'Arial Black', Gadget, sans-serif;
-        -webkit-text-stroke: 1px #000000;
-        text-shadow: 0 0 15px rgba(255, 204, 0, 0.6), 2px 2px 4px rgba(0,0,0,0.8);
+        -webkit-text-stroke: 1.2px #000000;
+        text-shadow: 0 0 15px rgba(255, 204, 0, 0.5), 2px 2px 4px rgba(0,0,0,0.8);
     }
-
-    /* CONTENEDORES / ESCUTILLAS: Color gris/azul metálico oscuro del submarino */
     div[data-testid="stMetric"], div[data-testid="stBlock"] {
-        background-color: rgba(33, 47, 61, 0.95) !important; 
+        background-color: rgba(33, 47, 61, 0.98) !important; 
         border: 4px solid #5d6d7e !important;
         border-radius: 14px;
         padding: 18px;
         box-shadow: inset 0 0 15px rgba(0,0,0,0.6), 5px 5px 15px rgba(0,0,0,0.5);
     }
-
-    /* TEXTO INTERNO DE LAS CAJAS: Blanco puro y grueso para máxima legibilidad */
     div[data-testid="stBlock"] h4, 
     div[data-testid="stBlock"] p, 
     div[data-testid="stBlock"] span, 
@@ -64,39 +117,23 @@ st.markdown("""
         text-shadow: none !important;
         font-weight: bold !important;
     }
-
-    /* Subtítulos de las ventanillas en azul aguamarina eléctrico */
-    div[data-testid="stBlock"] h4 {
-        color: #00ffcc !important;
-    }
-
-    /* Cuadros de alertas (Info, Success, Warning) */
+    div[data-testid="stBlock"] h4 { color: #00ffcc !important; }
     .stAlert {
-        background-color: rgba(0, 0, 0, 0.4) !important;
+        background-color: rgba(0, 0, 0, 0.6) !important;
         border: 1px solid #5d6d7e !important;
     }
-    .stAlert div {
-        color: #ffffff !important;
-    }
-
-    /* Formato de la Pila de Tickets */
+    .stAlert div { color: #ffffff !important; }
     .stText pre {
         color: #ffcc00 !important;
-        background-color: rgba(10, 15, 20, 0.8) !important;
+        background-color: rgba(10, 15, 20, 0.9) !important;
         font-weight: bold !important;
-        border-left: 3px solid #ffcc00 !important;
+        border-left: 4px solid #ffcc00 !important;
     }
-
-    /* Métrica de Dinero de Don Cangrejo */
     div[data-testid="stMetricValue"] {
         color: #2ecc71 !important;
         font-size: 2.2rem !important;
     }
-    div[data-testid="stMetricLabel"] {
-        color: #ffffff !important;
-    }
-
-    /* Botón de inicio Mecánico (Rojo Don Cangrejo Industrial) */
+    div[data-testid="stMetricLabel"] { color: #ffffff !important; }
     button[kind="primary"] {
         background-color: #c0392b !important;
         color: #ffffff !important;
@@ -113,56 +150,9 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 
-# --- CLASE CAJEROVISUAL (HILOS Y BACKEND) ---
-class CajeroVisual(threading.Thread):
-    def __init__(self, nombre_cajero, cola_clientes, menu_restaurante, pila_tickets):
-        super().__init__()
-        self.nombre_cajero = nombre_cajero
-        self.cola_clientes = cola_clientes
-        self.menu = menu_restaurante
-        self.pila_tickets = pila_tickets
-        self.estado = "⚓ Esperando cliente en el fondo del mar..."
-        self.cliente_actual = None
-        self.progreso = 0
-
-    def run(self):
-        while True:
-            try:
-                cliente = self.cola_clientes.popleft()
-            except IndexError:
-                self.estado = "🔴 Turno Finalizado (Don Cangrejo cuenta los billetes)"
-                break
-
-            self.atender_cliente(cliente)
-
-    def atender_cliente(self, cliente):
-        self.cliente_actual = cliente
-        self.estado = f"📝 Tomando orden de {cliente.nombre}..."
-        self.progreso = 10
-        
-        cantidad_productos = random.randint(1, 3)
-        for _ in range(cantidad_productos):
-            producto_elegido = random.choice(self.menu)
-            cliente.agregar_producto(producto_elegido)
-            
-        tiempo_preparacion = random.randint(2, 5)
-        self.estado = f"🍳 ¡Bob Esponja está cocinando el pedido de {cliente.nombre}!"
-        
-        for i in range(10):
-            time.sleep(tiempo_preparacion / 10)
-            self.progreso = 10 + (i * 9)
-
-        if (cliente.total > 0):
-            self.estado = f"🍔 ¡Cangreburger Entregada a {cliente.nombre}!"
-            self.pila_tickets.append(cliente)
-            time.sleep(1.5)
-            
-        self.cliente_actual = None
-        self.estado = "⚓ Esperando cliente en el fondo del mar..."
-        self.progreso = 0
-
-
-# --- CUERPO PRINCIPAL DEL FRONTEND ---
+# =========================================================================
+# 5. INTERFAZ DE USUARIO PRINCIPAL
+# =========================================================================
 st.title("🍔 El Cangrejo Cascararrabias — Gestión de Pedidos")
 st.markdown("### 🌊 ¡Resolviendo el CAOS en la cocina con Estructuras de Datos!")
 st.write("Con la supervisión de **DON CANGREJO** y la eficiencia de **BOB ESPONJA**.")
