@@ -143,7 +143,7 @@ class CajeroVisual(threading.Thread):
 
 
 # --- CUERPO PRINCIPAL DEL FRONTEND ---
-st.title("🍔 El Cangrejo Cascararrabias — Gestión de Pedidos")
+st.title("   🍔 El Cangrejo Cascararrabias — Gestión de Pedidos  ")
 st.markdown("### 🌊 ¡Resolviendo el CAOS en la cocina con Estructuras de Datos!")
 st.write("Con la supervisión de **DON CANGREJO** y la eficiencia de **BOB ESPONJA**.")
 st.write("---")
