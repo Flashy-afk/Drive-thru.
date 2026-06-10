@@ -47,9 +47,9 @@ st.markdown("""
         z-index: -1;
     }
 
-    /* Títulos estilo neón amarillo del letrero original */
+   
     h1, h2, h3 {
-        color: #ffcc00 !important;
+        color: #001c3d !important;
         text-shadow: 0 0 12px rgba(255, 204, 0, 0.8);
         font-family: 'Arial Black', Gadget, sans-serif;
     }
