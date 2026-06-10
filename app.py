@@ -55,7 +55,7 @@ st.markdown("""
     }
     
     h4, h5, h6 {
-        color: #00e6ff !important;
+        color: #001c3d !important;
         text-shadow: 0 0 8px rgba(0, 230, 255, 0.6);
     }
 
